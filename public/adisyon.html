@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adisyon Sistemi</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+        .container { padding: 20px; flex-grow: 1; }
+        #loginScreen { text-align: center; margin-top: 100px; }
+        #loginScreen input { margin: 5px; padding: 10px; width: 200px; }
+        #loginScreen button { padding: 10px 20px; }
+        #appScreen { display: none; }
+        header { background-color: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { margin: 0; font-size: 1.5em; }
+        header #userInfo { font-size: 0.9em; }
+        header button { background-color: #555; color: white; border: none; padding: 8px 15px; cursor: pointer; margin-left: 10px; }
+        header button:hover { background-color: #777; }
+        nav#cashierControls button, nav#waiterControls button { margin: 5px; padding: 10px; }
+        #tablesArea { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .table { background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; width: 200px; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); }
+        .table.boş { background-color: #e6ffe6; border-left: 5px solid green; }
+        .table.dolu { background-color: #ffe6e6; border-left: 5px solid red; }
+        .table h3 { margin-top: 0; }
+        .table-kitchen-status-new_order { background-color: #ffc107; /* Amber */ }
+        .table-kitchen-status-preparing { background-color: #2196f3; /* Blue */ color: white; }
+        .table-kitchen-status-ready { background-color: #4caf50; /* Green */ color: white; }
+        .table-kitchen-status-acknowledged { background-color: #9e9e9e; /* Grey */ color: white; }
+        #modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 8px; position: relative; }
+        .modal-content h2, .modal-content h3 { margin-top: 0; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; }
+        .close-btn:hover, .close-btn:focus { color: black; text-decoration: none; }
+        #orderItemsList li, #quickSaleItemsList li, #kdsOrdersArea .order-card .order-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        #orderItemsList li:last-child, #quickSaleItemsList li:last-child { border-bottom: none; }
+        #orderItemsList .item-details, #quickSaleItemsList .item-details, #kdsOrdersArea .order-card .item-details { flex-grow: 1; }
+        #orderItemsList .item-actions button, #quickSaleItemsList .item-actions button { margin-left: 5px; padding: 3px 7px; font-size: 0.8em; }
+        #productsForOrderArea, #productsForQuickSaleArea { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; }
+        .product-item { padding: 8px; cursor: pointer; border-bottom: 1px dashed #eee; }
+        .product-item:hover { background-color: #f0f0f0; }
+        .product-item:last-child { border-bottom: none; }
+        .category-group h4 { background-color: #e9ecef; padding: 5px; margin-top: 10px; margin-bottom: 5px; border-top: 1px solid #ccc; }
+        .hidden { display: none; }
+        #kdsScreen { display: none; padding: 10px; background-color: #222; color: white; min-height: calc(100vh - 60px); } /* Adjusted for header */
+        #kdsOrdersArea { display: flex; flex-wrap: wrap; gap: 10px; }
+        .order-card { background-color: #333; border: 1px solid #555; border-radius: 5px; padding: 10px; width: 300px; margin-bottom:10px;}
+        .order-card h4 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .order-card .order-item { font-size: 0.9em; padding: 5px; margin-bottom: 5px; border-radius: 3px; }
+        .order-item.kds-new { background-color: #6c757d; } /* Grey for new */
+        .order-item.kds-preparing { background-color: #ffc107; color: black; } /* Amber for preparing */
+        .order-item.kds-ready { background-color: #28a745; } /* Green for ready */
+        .order-item.kds-delivered_to_customer { background-color: #17a2b8; text-decoration: line-through; } /* Info/Blue for delivered */
+        .order-card-kitchen-status-new_order { border-left: 5px solid #6c757d; }
+        .order-card-kitchen-status-preparing { border-left: 5px solid #ffc107; }
+        .order-card-kitchen-status-ready { border-left: 5px solid #28a745; }
+        .order-card-kitchen-status-acknowledged { border-left: 5px solid #17a2b8; }
+        .kds-item-actions button { padding: 3px 6px; font-size: 0.8em; margin-left: 5px; }
+        .kds-order-actions button { margin-top: 10px; padding: 5px 10px; }
+        #reportsModal table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        #reportsModal th, #reportsModal td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #reportsModal th { background-color: #f2f2f2; }
+        .admin-section { margin-top: 20px; padding: 15px; background-color: #fff; border: 1px solid #ddd; border-radius: 5px; }
+        .admin-section h3 { margin-top: 0; }
+        .admin-section input, .admin-section select { margin-right: 10px; margin-bottom: 10px; padding: 8px; }
+        .admin-section button { padding: 8px 15px; }
+        .admin-section ul { list-style-type: none; padding: 0; }
+        .admin-section li { padding: 5px 0; border-bottom: 1px solid #eee; }
+        .admin-section li:last-child { border-bottom: none; }
+        .auth-button { margin-right: 10px; }
+        footer { background-color: #333; color: white; text-align: center; padding: 10px 0; margin-top: auto; }
+        .toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 2px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; font-size: 17px; }
+        .toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen">
+        <h2>Adisyon Sistemi Giriş</h2>
+        <input type="text" id="username" placeholder="Kullanıcı Adı">
+        <input type="password" id="password" placeholder="Şifre">
+        <button onclick="login()">Giriş Yap</button>
+        <p id="loginError" style="color: red;"></p>
+    </div>
+
+    <div id="appScreen">
+        <header>
+            <h1>Adisyon Sistemi</h1>
+            <div>
+                <span id="userInfo"></span>
+                <button id="logoutButton" onclick="logoutUser()">Çıkış Yap</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <nav id="cashierControls" class="hidden">
+                <button onclick="openQuickSaleModal()">Hızlı Satış</button>
+                <button onclick="openReportsModal('sales')">Satış Raporu</button>
+                <button onclick="openReportsModal('activity')">Aktivite Logları</button>
+                <button onclick="openAdminModal('products')">Ürün Yönetimi</button>
+                <button onclick="openAdminModal('tables')">Masa Yönetimi</button>
+                <button onclick="openAdminModal('waiters')">Garson Yönetimi</button>
+                <button onclick="openAdminModal('users')">Kullanıcı Listesi</button>
+            </nav>
+            <nav id="waiterControls" class="hidden">
+                </nav>
+
+            <div id="tablesArea"></div>
+        </div>
+    </div>
+
+    <div id="kdsScreen">
+        <header>
+            <h1>Mutfak Ekranı (KDS)</h1>
+            <div>
+                <span id="kdsUserInfo"></span>
+                <button onclick="logoutUser()">Çıkış Yap</button>
+            </div>
+        </header>
+        <div class="container">
+            <div id="kdsOrdersArea"></div>
+        </div>
+    </div>
+
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('orderModal')">&times;</span>
+            <h2 id="orderModalTitle">Masa Siparişi</h2>
+            <div>Müşteri Adı: <input type="text" id="tableCustomerNameInput" placeholder="Masa Müşterisi Adı (Opsiyonel)"> <button onclick="updateTableCustomerName()">Kaydet</button></div>
+            <div id="orderItemsLockStatus" style="font-weight:bold; margin: 10px 0;"></div>
+            <ul id="orderItemsList"></ul>
+            <p><strong>Toplam Tutar: <span id="orderTotalAmount">0.00</span> TL</strong></p>
+
+            <div id="addOrderItemSection">
+                <h3>Ürün Ekle</h3>
+                <input type="text" id="productSearchInput" onkeyup="filterProductsForOrder()" placeholder="Ürün Ara...">
+                <div id="productsForOrderArea"></div>
+                Miktar: <input type="number" id="orderItemQuantity" value="1" min="1" style="width: 60px;">
+                Açıklama: <input type="text" id="orderItemDescription" placeholder="Özel istek (örn: az pişmiş)">
+                <br>
+                <input type="checkbox" id="isKgSale" onchange="toggleKgInput(this.checked)"> KG Satışı
+                <span id="kgSaleInputs" class="hidden">
+                    Gram: <input type="number" id="itemGrams" placeholder="örn: 1500">
+                    Özel Fiyat (KG): <input type="number" id="itemKgPriceOverwrite" placeholder="KG Fiyatı">
+                </span>
+                <button onclick="addSelectedItemToOrder()">Seçili Ürünü Ekle</button>
+            </div>
+
+            <div id="manualOrderItemSection" class="hidden">
+                <h3>Manuel Ürün Ekle</h3>
+                Ürün Adı: <input type="text" id="manualItemName" placeholder="Örn: Özel Salata">
+                Fiyat: <input type="number" id="manualItemPrice" step="0.01" placeholder="0.00">
+                Miktar: <input type="number" id="manualItemQuantity" value="1" min="1">
+                Kategori: <input type="text" id="manualItemCategory" placeholder="Örn: Salatalar">
+                Açıklama: <input type="text" id="manualItemDescription" placeholder="İçindekiler...">
+                <button onclick="addManualItemToOrder()">Manuel Ürünü Ekle</button>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button id="closeTableButton" class="hidden" onclick="closeTable()">Masayı Kapat (Hesap Al)</button>
+                <button id="acknowledgeOrderReadyButton" class="hidden" onclick="acknowledgeOrderReady()">Sipariş Hazır (Teslim Alındı)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quickSaleModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('quickSaleModal')">&times;</span>
+            <h2>Hızlı Satış</h2>
+            Müşteri Adı: <input type="text" id="quickSaleCustomerName" placeholder="Müşteri Adı (Opsiyonel)">
+            <ul id="quickSaleItemsList"></ul>
+            <p><strong>Toplam: <span id="quickSaleTotalAmount">0.00</span> TL</strong></p>
+            <hr>
+            <h3>Ürün Ekle</h3>
+            <input type="text" id="productSearchQuickSaleInput" onkeyup="filterProductsForQuickSale()" placeholder="Ürün Ara...">
+            <div id="productsForQuickSaleArea"></div>
+            Miktar: <input type="number" id="quickSaleItemQuantity" value="1" min="1" style="width: 60px;">
+             Açıklama: <input type="text" id="quickSaleItemDescription" placeholder="Not...">
+            <button onclick="addSelectedItemToQuickSale()">Seçili Ürünü Ekle</button>
+            <button onclick="completeQuickSale()">Satışı Tamamla</button>
+        </div>
+    </div>
+
+    <div id="reportsModal" class="modal">
+        <div class="modal-content" style="max-width: 90%;">
+            <span class="close-btn" onclick="closeModal('reportsModal')">&times;</span>
+            <h2 id="reportsModalTitle">Rapor</h2>
+            <div id="reportDataContainer"></div>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('adminModal')">&times;</span>
+            <h2 id="adminModalTitle">Yönetim Paneli</h2>
+            <div id="adminContentArea"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <footer>
+        BALIKLI LEZZET GÜNLERİ Adisyon Sistemi &copy; <span id="currentYear"></span>
+    </footer>
+
+    <script>
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsURL = `${wsProtocol}//${window.location.host}`;
+        let ws;
+        let currentUser = null;
+        let tables = [];
+        let products = [];
+        let users = [];
+        let waiters = [];
+        let currentOpenTableId = null;
+        let selectedProductIdOrder = null;
+        let selectedProductIdQuickSale = null;
+        let activeQuickSalesForKDSDisplay = {}; // For KDS client-side tracking
+
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = "toast show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, duration - 500);
+        }
+
+        function connectWebSocket() {
+            ws = new WebSocket(wsURL);
+
+            ws.onopen = () => {
+                console.log('WebSocket bağlantısı kuruldu.');
+                const storedUser = localStorage.getItem('adisyonUser');
+                if (storedUser) {
+                    try {
+                        currentUser = JSON.parse(storedUser);
+                        ws.send(JSON.stringify({ type: 'reauthenticate', payload: { user: currentUser } }));
+                        showToast("Yeniden bağlanılıyor...");
+                    } catch (e) {
+                        localStorage.removeItem('adisyonUser');
+                        showLoginScreen();
+                    }
+                } else {
+                    showLoginScreen();
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log('Sunucudan mesaj:', message);
+                handleWebSocketMessage(message);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket bağlantısı kapandı. Yeniden bağlanmaya çalışılıyor...');
+                showToast("Bağlantı kesildi. Yeniden deneniyor...", 5000);
+                setTimeout(connectWebSocket, 3000); // 3 saniye sonra yeniden bağlanmayı dene
+                // UI'ı login ekranına döndürmek veya bir "bağlantı kesildi" mesajı göstermek daha iyi olabilir.
+                // Şimdilik sadece konsola logluyoruz ve yeniden deniyoruz.
+                // Eğer kullanıcı aktifse, login ekranına hemen düşürmeyebiliriz, reauthenticate denenecek.
+                if (!currentUser) showLoginScreen(); // Eğer hiç login olmamışsa login ekranını göster
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket hatası:', error);
+                showToast("WebSocket bağlantı hatası!", 5000);
+                // Hata durumunda da login ekranına yönlendirebiliriz veya kullanıcıya bilgi verebiliriz.
+            };
+        }
+
+        function handleWebSocketMessage(message) {
+            const { type, payload } = message;
+            switch (type) {
+                case 'login_success':
+                    currentUser = payload.user;
+                    localStorage.setItem('adisyonUser', JSON.stringify(currentUser));
+                    products = payload.products;
+                    tables = payload.tables;
+                    showAppScreen();
+                    renderTables();
+                    updateUserInfo();
+                    if (currentUser.role === 'kitchen') {
+                        showKdsScreen();
+                        ws.send(JSON.stringify({ type: 'get_initial_kds_orders' }));
+                    } else {
+                        showAppScreenMain();
+                    }
+                    showToast(`Hoşgeldin, ${currentUser.username}!`);
+                    break;
+                case 'login_fail':
+                    document.getElementById('loginError').textContent = payload.error;
+                    localStorage.removeItem('adisyonUser');
+                    break;
+                case 'tables_update':
+                    tables = payload.tables;
+                    renderTables();
+                    if (currentOpenTableId) { // Eğer bir masa detayı açıksa, onu da güncelle
+                        const openTable = tables.find(t => t.id === currentOpenTableId);
+                        if (openTable) renderOrderModal(openTable);
+                        else closeModal('orderModal'); // Masa artık yoksa kapat
+                    }
+                    // KDS'de de masa bazlı siparişler güncellenebilir (opsiyonel, KDS genelde kendi eventlerini dinler)
+                    if(currentUser && currentUser.role === 'kitchen'){
+                        ws.send(JSON.stringify({ type: 'get_initial_kds_orders' })); // KDS'i yeniden senkronize et
+                    }
+                    break;
+                case 'products_update':
+                    products = payload.products;
+                    // Eğer ürün ekleme modal'ları açıksa, listeleri güncelle
+                    if (document.getElementById('orderModal').style.display === 'block') {
+                        renderProductsForSelection('productsForOrderArea', 'order');
+                    }
+                    if (document.getElementById('quickSaleModal').style.display === 'block') {
+                        renderProductsForSelection('productsForQuickSaleArea', 'quickSale');
+                    }
+                    if (document.getElementById('adminModal').style.display === 'block' && currentAdminSection === 'products') {
+                        renderAdminProducts();
+                    }
+                    break;
+                case 'users_list':
+                    users = payload.users;
+                    if (currentAdminSection === 'users') renderAdminUsersList();
+                    break;
+                case 'waiters_list':
+                    waiters = payload.waiters;
+                    if (currentAdminSection === 'waiters') renderAdminWaiters();
+                    break;
+                case 'sales_report_data':
+                    renderSalesReport(payload.sales);
+                    break;
+                case 'activity_log_data':
+                    renderActivityLog(payload.logs);
+                    break;
+                case 'order_update_fail':
+                case 'manual_order_update_fail':
+                case 'table_operation_fail':
+                case 'waiter_operation_fail':
+                case 'quick_sale_fail':
+                    showToast(`Hata: ${payload.error || payload.message}`, 4000);
+                    break;
+                case 'main_menu_product_added':
+                case 'main_menu_product_updated':
+                case 'table_operation_success':
+                case 'waiter_operation_success':
+                case 'quick_sale_success':
+                case 'table_customer_name_updated':
+                    showToast(payload.message, 3000);
+                    if (type === 'main_menu_product_added' || type === 'main_menu_product_updated') {
+                         // products listesi zaten products_update ile gelecek, gerekirse admin panelini yenile
+                        if(currentAdminSection === 'products') renderAdminProducts();
+                    }
+                    if (type === 'table_operation_success') {
+                        if(currentAdminSection === 'tables') renderAdminTables();
+                    }
+                     if (type === 'waiter_operation_success') {
+                        if(currentAdminSection === 'waiters') renderAdminWaiters();
+                    }
+                    if (type === 'quick_sale_success') {
+                        closeModal('quickSaleModal');
+                    }
+                    break;
+                case 'kds_initial_orders':
+                    activeQuickSalesForKDSDisplay = {}; // Reset local KDS quick sales on full update
+                    payload.activeOrders.forEach(order => {
+                        if (order.isQuickSale) activeQuickSalesForKDSDisplay[order.id] = order;
+                    });
+                    renderKdsOrders(payload.activeOrders);
+                    break;
+                case 'new_quick_sale_for_kds':
+                     activeQuickSalesForKDSDisplay[payload.id] = payload;
+                     appendOrUpdateKdsOrderCard(payload);
+                    break;
+                case 'kds_quick_sale_item_updated':
+                    if (activeQuickSalesForKDSDisplay[payload.quickSaleKdsId]) {
+                        const qsOrder = activeQuickSalesForKDSDisplay[payload.quickSaleKdsId];
+                        const itemIndex = qsOrder.order.findIndex(i => i.kds_item_id === payload.item.kds_item_id);
+                        if (itemIndex > -1) {
+                            qsOrder.order[itemIndex] = payload.item;
+                        }
+                        qsOrder.kitchen_status = payload.overallKitchenStatus;
+                        appendOrUpdateKdsOrderCard(qsOrder); // Re-render the specific card
+                    }
+                    break;
+                case 'kds_quick_sale_full_update':
+                     activeQuickSalesForKDSDisplay[payload.id] = payload;
+                     appendOrUpdateKdsOrderCard(payload);
+                    break;
+                case 'kds_quick_sale_cleared_broadcast':
+                    delete activeQuickSalesForKDSDisplay[payload.quickSaleKdsId];
+                    const cardToRemove = document.getElementById(`kds-order-${payload.quickSaleKdsId}`);
+                    if (cardToRemove) cardToRemove.remove();
+                    break;
+                case 'notify_quick_sale_ready':
+                    if (currentUser && currentUser.role === 'cashier') {
+                        showToast(`"${payload.displayName}" isimli Hızlı Satış hazır! (ID: ${payload.quickSaleKdsId})`, 5000);
+                    }
+                    break;
+                case 'error':
+                    showToast(`Sunucu Hatası: ${payload.message}`, 4000);
+                    if (payload.message === 'Geçersiz oturum.' || payload.message === 'Eksik oturum bilgisi.') {
+                        logoutUser(true); // Force logout without server message
+                    }
+                    break;
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            document.getElementById('loginError').textContent = '';
+            if (!username || !password) {
+                document.getElementById('loginError').textContent = 'Kullanıcı adı ve şifre giriniz.';
+                return;
+            }
+            ws.send(JSON.stringify({ type: 'login', payload: { username, password } }));
+        }
+
+        function logoutUser(silent = false) {
+            if (!silent && ws && ws.readyState === WebSocket.OPEN) {
+                 ws.send(JSON.stringify({ type: 'logout' }));
+            }
+            currentUser = null;
+            localStorage.removeItem('adisyonUser');
+            showLoginScreen();
+            console.log('Çıkış yapıldı.');
+        }
+
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('kdsScreen').style.display = 'none';
+            document.getElementById('cashierControls').classList.add('hidden');
+            document.getElementById('waiterControls').classList.add('hidden');
+        }
+
+        function showAppScreen() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').textContent = '';
+        }
+
+        function showAppScreenMain() {
+            document.getElementById('appScreen').style.display = 'block';
+            document.getElementById('kdsScreen').style.display = 'none';
+            document.getElementById('cashierControls').classList.toggle('hidden', currentUser.role !== 'cashier');
+            document.getElementById('waiterControls').classList.toggle('hidden', currentUser.role !== 'waiter');
+            document.getElementById('manualOrderItemSection').classList.toggle('hidden', currentUser.role !== 'cashier');
+            document.getElementById('closeTableButton').classList.toggle('hidden', currentUser.role !== 'cashier');
+        }
+        
+        function showKdsScreen() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('kdsScreen').style.display = 'block';
+            document.getElementById('kdsUserInfo').textContent = `Kullanıcı: ${currentUser.username} (Mutfak)`;
+        }
+
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userInfo').textContent = `Kullanıcı: ${currentUser.username} (${currentUser.role})`;
+            }
+        }
+
+        function renderTables() {
+            const tablesArea = document.getElementById('tablesArea');
+            tablesArea.innerHTML = '';
+            tables.sort((a,b) => a.name.localeCompare(b.name)).forEach(table => {
+                const tableDiv = document.createElement('div');
+                tableDiv.className = `table ${table.status}`;
+                if(table.kitchen_status && table.status === 'dolu') {
+                    tableDiv.classList.add(`table-kitchen-status-${table.kitchen_status}`);
+                }
+                tableDiv.innerHTML = `
+                    <h3>${table.name}</h3>
+                    <p>Durum: ${table.status === 'boş' ? 'Boş' : 'Dolu'}</p>
+                    ${table.status === 'dolu' ? `<p>Toplam: ${table.total.toFixed(2)} TL</p>` : ''}
+                    ${table.waiterUsername ? `<p>Garson: ${table.waiterUsername}</p>` : ''}
+                    ${table.customerNameOnTable ? `<p>Müşteri: ${table.customerNameOnTable}</p>` : ''}
+                    ${table.kitchen_status && table.status === 'dolu' ? `<p>Mutfak: ${translateKitchenStatus(table.kitchen_status)}</p>` : ''}
+                `;
+                tableDiv.onclick = () => openOrderModal(table.id);
+                tablesArea.appendChild(tableDiv);
+            });
+        }
+
+        function translateKitchenStatus(status) {
+            switch(status) {
+                case 'new_order': return 'Yeni Sipariş';
+                case 'preparing': return 'Hazırlanıyor';
+                case 'ready': return 'Hazır';
+                case 'acknowledged': return 'Teslim Alındı';
+                default: return status || '-';
+            }
+        }
+
+        function openOrderModal(tableId) {
+            currentOpenTableId = tableId;
+            const table = tables.find(t => t.id === tableId);
+            if (!table) return;
+
+            renderOrderModal(table);
+            document.getElementById('productSearchInput').value = '';
+            filterProductsForOrder(); // initial full list
+            document.getElementById('orderModal').style.display = 'block';
+        }
+
+        function renderOrderModal(table){
+            document.getElementById('orderModalTitle').textContent = `${table.name} Siparişi`;
+            document.getElementById('tableCustomerNameInput').value = table.customerNameOnTable || '';
+            const orderItemsList = document.getElementById('orderItemsList');
+            orderItemsList.innerHTML = '';
+            let allItemsLockedForWaiter = false;
+
+            if (currentUser.role === 'waiter') {
+                 allItemsLockedForWaiter = table.order.every(item => item.kds_status_mutfak && item.kds_status_mutfak !== 'new');
+            }
+            document.getElementById('orderItemsLockStatus').textContent = allItemsLockedForWaiter ? "Sipariş mutfağa iletildi, değişiklik için kasiyere başvurun." : "";
+            document.getElementById('addOrderItemSection').style.display = allItemsLockedForWaiter ? 'none' : 'block';
+
+
+            table.order.forEach(item => {
+                const li = document.createElement('li');
+                let itemStatusText = '';
+                if (item.kds_status_mutfak) {
+                    switch(item.kds_status_mutfak) {
+                        case 'new': itemStatusText = '(Yeni)'; break;
+                        case 'preparing': itemStatusText = '(Hazırlanıyor)'; break;
+                        case 'ready': itemStatusText = '(Hazır)'; break;
+                        case 'delivered_to_customer': itemStatusText = '(Teslim Edildi)'; break;
+                    }
+                }
+                li.innerHTML = `
+                    <div class="item-details">
+                        ${item.name} - ${item.quantity} adet x ${parseFloat(item.priceAtOrder).toFixed(2)} TL = ${(item.quantity * parseFloat(item.priceAtOrder)).toFixed(2)} TL ${itemStatusText}
+                        ${item.description ? `<br><small><i>Not: ${item.description}</i></small>` : ''}
+                        ${item.isKgSale && item.grams ? `<br><small><i>(${item.grams} gr)</i></small>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        ${ (currentUser.role === 'cashier' || (currentUser.role === 'waiter' && item.kds_status_mutfak === 'new' && !allItemsLockedForWaiter)) ?
+                           `<button onclick="removeOrderItem('${table.id}', '${item.kds_item_id}')">Sil</button>` : ''
+                        }
+                    </div>
+                `;
+                orderItemsList.appendChild(li);
+            });
+            document.getElementById('orderTotalAmount').textContent = table.total.toFixed(2);
+            document.getElementById('closeTableButton').style.display = (currentUser.role === 'cashier' && table.order.length > 0) ? 'inline-block' : 'none';
+            document.getElementById('acknowledgeOrderReadyButton').style.display = (currentUser.role === 'cashier' || currentUser.role === 'waiter') && table.kitchen_status === 'ready' ? 'inline-block' : 'none';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            currentOpenTableId = null;
+            selectedProductIdOrder = null;
+            selectedProductIdQuickSale = null;
+            // Clear forms inside modal if needed
+            if (modalId === 'quickSaleModal') {
+                document.getElementById('quickSaleItemsList').innerHTML = '';
+                document.getElementById('quickSaleTotalAmount').textContent = '0.00';
+                document.getElementById('quickSaleCustomerName').value = '';
+            }
+            if (modalId === 'adminModal') {
+                currentAdminSection = null;
+                document.getElementById('adminContentArea').innerHTML = '';
+            }
+        }
+
+        function filterProductsForOrder() {
+            renderProductsForSelection('productsForOrderArea', 'order', document.getElementById('productSearchInput').value.toLowerCase());
+        }
+        function filterProductsForQuickSale() {
+            renderProductsForSelection('productsForQuickSaleArea', 'quickSale', document.getElementById('productSearchQuickSaleInput').value.toLowerCase());
+        }
+
+        function renderProductsForSelection(areaId, type, searchTerm = '') {
+            const productsArea = document.getElementById(areaId);
+            productsArea.innerHTML = '';
+            selectedProductIdOrder = (type === 'order') ? null : selectedProductIdOrder;
+            selectedProductIdQuickSale = (type === 'quickSale') ? null : selectedProductIdQuickSale;
+
+            const categories = {};
+            products.forEach(p => {
+                if (!categories[p.category]) categories[p.category] = [];
+                categories[p.category].push(p);
+            });
+
+            for (const categoryName in categories) {
+                const group = categories[categoryName].filter(p => p.name.toLowerCase().includes(searchTerm));
+                if (group.length === 0) continue;
+
+                const categoryHeader = document.createElement('h4');
+                categoryHeader.textContent = categoryName;
+                productsArea.appendChild(categoryHeader);
+
+                group.sort((a,b) => a.name.localeCompare(b.name)).forEach(product => {
+                    const productDiv = document.createElement('div');
+                    productDiv.className = 'product-item';
+                    productDiv.textContent = `${product.name} - ${product.price.toFixed(2)} TL`;
+                    productDiv.onclick = () => {
+                        if (type === 'order') selectedProductIdOrder = product.id;
+                        else if (type === 'quickSale') selectedProductIdQuickSale = product.id;
+                        
+                        // Highlight selection
+                        Array.from(productsArea.getElementsByClassName('product-item')).forEach(el => el.style.backgroundColor = '');
+                        productDiv.style.backgroundColor = '#a0d2eb';
+
+                        if (type === 'order' && document.getElementById('isKgSale').checked) {
+                           document.getElementById('itemKgPriceOverwrite').value = product.price; // Default KG price from product
+                        }
+                    };
+                    productsArea.appendChild(productDiv);
+                });
+            }
+             if(productsArea.innerHTML === '') productsArea.innerHTML = "<p>Aramayla eşleşen ürün bulunamadı.</p>";
+        }
+
+        function toggleKgInput(isKg) {
+            document.getElementById('kgSaleInputs').classList.toggle('hidden', !isKg);
+            if (!isKg) {
+                document.getElementById('itemGrams').value = '';
+                document.getElementById('itemKgPriceOverwrite').value = '';
+            } else if (selectedProductIdOrder) {
+                 const product = products.find(p => p.id === selectedProductIdOrder);
+                 if (product) document.getElementById('itemKgPriceOverwrite').value = product.price;
+            }
+        }
+
+        function addSelectedItemToOrder() {
+            if (!selectedProductIdOrder || !currentOpenTableId) {
+                showToast('Lütfen bir ürün seçin.', 3000);
+                return;
+            }
+            const quantity = parseInt(document.getElementById('orderItemQuantity').value);
+            const description = document.getElementById('orderItemDescription').value;
+            const customerNameOnTable = document.getElementById('tableCustomerNameInput').value.trim() || null;
+            const product = products.find(p => p.id === selectedProductIdOrder);
+
+            const isKgSale = document.getElementById('isKgSale').checked;
+            let grams = null;
+            let priceAtOrderOverwrite = null;
+            let nameOverwrite = null;
+
+            if (isKgSale) {
+                grams = parseFloat(document.getElementById('itemGrams').value);
+                const kgPrice = parseFloat(document.getElementById('itemKgPriceOverwrite').value);
+                if (isNaN(grams) || grams <= 0 || isNaN(kgPrice) || kgPrice < 0) {
+                    showToast('KG satışı için geçerli gram ve KG fiyatı girin.', 3000);
+                    return;
+                }
+                priceAtOrderOverwrite = (grams / 1000) * kgPrice; // Calculate total price for the grams
+                nameOverwrite = `${product.name} (${grams} GR)`;
+            }
+
+
+            if (quantity > 0) {
+                ws.send(JSON.stringify({
+                    type: 'add_order_item',
+                    payload: {
+                        tableId: currentOpenTableId,
+                        productId: selectedProductIdOrder,
+                        quantity: isKgSale ? 1 : quantity, // For KG sale, quantity is 1 unit of X grams
+                        description: description,
+                        customerNameOnTable: customerNameOnTable,
+                        isKgSale: isKgSale,
+                        grams: isKgSale ? grams : null,
+                        priceAtOrderOverwrite: isKgSale ? priceAtOrderOverwrite : null,
+                        nameOverwrite: isKgSale ? nameOverwrite : null
+                    }
+                }));
+                document.getElementById('orderItemQuantity').value = 1;
+                document.getElementById('orderItemDescription').value = '';
+                document.getElementById('isKgSale').checked = false;
+                toggleKgInput(false);
+                selectedProductIdOrder = null;
+                filterProductsForOrder(); // Clear selection highlight
+            } else {
+                showToast('Miktar 0\'dan büyük olmalı.', 3000);
+            }
+        }
+
+        function addManualItemToOrder() {
+            if (!currentOpenTableId || currentUser.role !== 'cashier') return;
+            const name = document.getElementById('manualItemName').value;
+            const price = parseFloat(document.getElementById('manualItemPrice').value);
+            const quantity = parseInt(document.getElementById('manualItemQuantity').value);
+            const category = document.getElementById('manualItemCategory').value || 'Diğer';
+            const description = document.getElementById('manualItemDescription').value;
+            const customerNameOnTable = document.getElementById('tableCustomerNameInput').value.trim() || null;
+
+            if (name && price >= 0 && quantity > 0) {
+                 ws.send(JSON.stringify({
+                    type: 'add_manual_order_item',
+                    payload: { tableId: currentOpenTableId, name, price, quantity, category, description, customerNameOnTable }
+                }));
+                document.getElementById('manualItemName').value = '';
+                document.getElementById('manualItemPrice').value = '';
+                document.getElementById('manualItemQuantity').value = 1;
+                document.getElementById('manualItemCategory').value = '';
+                document.getElementById('manualItemDescription').value = '';
+            } else {
+                showToast('Manuel ürün için ad, fiyat ve miktar girin.', 3000);
+            }
+        }
+
+
+        function removeOrderItem(tableId, kdsItemId) {
+            ws.send(JSON.stringify({ type: 'remove_order_item', payload: { tableId: tableId, kds_item_id_to_remove: kdsItemId } }));
+        }
+
+        function updateTableCustomerName() {
+            if (!currentOpenTableId) return;
+            const customerName = document.getElementById('tableCustomerNameInput').value.trim();
+            ws.send(JSON.stringify({
+                type: 'update_table_customer_name',
+                payload: { tableId: currentOpenTableId, customerName: customerName || null }
+            }));
+        }
+
+        function closeTable() {
+            if (currentOpenTableId && currentUser.role === 'cashier') {
+                if (confirm("Masayı kapatıp hesabı almak istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+                    ws.send(JSON.stringify({ type: 'close_table', payload: { tableId: currentOpenTableId } }));
+                    closeModal('orderModal');
+                }
+            }
+        }
+        
+        function acknowledgeOrderReady() {
+            if (currentOpenTableId && (currentUser.role === 'cashier' || currentUser.role === 'waiter')) {
+                ws.send(JSON.stringify({ type: 'acknowledge_order_ready', payload: { tableId: currentOpenTableId }}));
+                // Modal'ı güncellemek için table_update beklenir. Gerekirse hemen UI'da lokal değişiklik yapılabilir.
+            }
+        }
+
+        // Quick Sale Functions
+        let quickSaleItems = [];
+        function openQuickSaleModal() {
+            if (currentUser.role !== 'cashier') return;
+            quickSaleItems = [];
+            document.getElementById('quickSaleCustomerName').value = '';
+            updateQuickSaleDisplay();
+            renderProductsForSelection('productsForQuickSaleArea', 'quickSale');
+            document.getElementById('productSearchQuickSaleInput').value = '';
+            document.getElementById('quickSaleModal').style.display = 'block';
+        }
+
+        function addSelectedItemToQuickSale() {
+            if (!selectedProductIdQuickSale) {
+                showToast('Lütfen bir ürün seçin.', 3000);
+                return;
+            }
+            const quantity = parseInt(document.getElementById('quickSaleItemQuantity').value);
+            const description = document.getElementById('quickSaleItemDescription').value;
+            const product = products.find(p => p.id === selectedProductIdQuickSale);
+
+            if (product && quantity > 0) {
+                const existingItem = quickSaleItems.find(item => item.productId === product.id && item.description === description);
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    quickSaleItems.push({
+                        productId: product.id,
+                        name: product.name,
+                        priceAtOrder: product.price,
+                        quantity: quantity,
+                        category: product.category,
+                        description: description
+                    });
+                }
+                updateQuickSaleDisplay();
+                document.getElementById('quickSaleItemQuantity').value = 1;
+                document.getElementById('quickSaleItemDescription').value = '';
+                selectedProductIdQuickSale = null;
+                // Clear product selection highlight
+                Array.from(document.getElementById('productsForQuickSaleArea').getElementsByClassName('product-item')).forEach(el => el.style.backgroundColor = '');
+                document.getElementById('productSearchQuickSaleInput').value = '';
+                filterProductsForQuickSale();
+            } else {
+                showToast('Miktar 0\'dan büyük olmalı.', 3000);
+            }
+        }
+
+        function removeQuickSaleItem(index) {
+            quickSaleItems.splice(index, 1);
+            updateQuickSaleDisplay();
+        }
+
+        function updateQuickSaleDisplay() {
+            const list = document.getElementById('quickSaleItemsList');
+            list.innerHTML = '';
+            let total = 0;
+            quickSaleItems.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="item-details">
+                        ${item.name} - ${item.quantity} x ${item.priceAtOrder.toFixed(2)} TL
+                        ${item.description ? `<br><small><i>Not: ${item.description}</i></small>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        <button onclick="removeQuickSaleItem(${index})">Sil</button>
+                    </div>
+                `;
+                list.appendChild(li);
+                total += item.quantity * item.priceAtOrder;
+            });
+            document.getElementById('quickSaleTotalAmount').textContent = total.toFixed(2);
+        }
+
+        function completeQuickSale() {
+            if (quickSaleItems.length === 0) {
+                showToast('Hızlı satış için ürün ekleyin.', 3000);
+                return;
+            }
+            const customerName = document.getElementById('quickSaleCustomerName').value.trim() || null;
+            const totalAmount = quickSaleItems.reduce((sum, item) => sum + (item.quantity * item.priceAtOrder), 0);
+
+            ws.send(JSON.stringify({
+                type: 'complete_quick_sale',
+                payload: {
+                    items: quickSaleItems,
+                    cashierUsername: currentUser.username,
+                    customerName: customerName,
+                    originalTotal: totalAmount, // Assuming no discount UI for now
+                    discountAmount: 0,
+                    finalTotal: totalAmount
+                }
+            }));
+            // Modal will be closed on 'quick_sale_success'
+        }
+
+        // Reports Functions
+        function openReportsModal(reportType) {
+            if (currentUser.role !== 'cashier') return;
+            document.getElementById('reportsModalTitle').textContent = reportType === 'sales' ? 'Satış Raporu' : 'Aktivite Logları';
+            document.getElementById('reportDataContainer').innerHTML = '<p>Rapor yükleniyor...</p>';
+            ws.send(JSON.stringify({ type: reportType === 'sales' ? 'get_sales_report' : 'get_activity_log' }));
+            document.getElementById('reportsModal').style.display = 'block';
+        }
+
+        function renderSalesReport(sales) {
+            const container = document.getElementById('reportDataContainer');
+            if (!sales || sales.length === 0) {
+                container.innerHTML = '<p>Görüntülenecek satış kaydı bulunamadı.</p>';
+                return;
+            }
+            let tableHTML = `<table><thead><tr>
+                <th>ID</th><th>Ürün Adı</th><th>Fiyat</th><th>Adet</th><th>Toplam Fiyat</th>
+                <th>Kategori</th><th>Açıklama</th><th>Garson</th><th>Masa</th><th>Müşteri</th><th>Tarih</th>
+            </tr></thead><tbody>`;
+            sales.forEach(sale => {
+                tableHTML += `<tr>
+                    <td>${sale.id}</td><td>${sale.item_name}</td><td>${sale.item_price.toFixed(2)}</td><td>${sale.quantity}</td><td>${sale.total_item_price.toFixed(2)}</td>
+                    <td>${sale.category}</td><td>${sale.description || '-'}</td><td>${sale.waiter_username}</td><td>${sale.table_name}</td><td>${sale.customer_name || '-'}</td><td>${sale.sale_timestamp}</td>
+                </tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function renderActivityLog(logs) {
+            const container = document.getElementById('reportDataContainer');
+             if (!logs || logs.length === 0) {
+                container.innerHTML = '<p>Görüntülenecek aktivite kaydı bulunamadı.</p>';
+                return;
+            }
+            let tableHTML = `<table><thead><tr>
+                <th>Log ID</th><th>Kullanıcı</th><th>Eylem</th><th>Detaylar</th><th>Zaman</th>
+            </tr></thead><tbody>`;
+            logs.forEach(log => {
+                tableHTML += `<tr>
+                    <td>${log.log_id}</td><td>${log.user_username}</td><td>${log.action_type}</td>
+                    <td><pre style="white-space: pre-wrap; word-break: break-all;">${JSON.stringify(log.log_details, null, 2)}</pre></td>
+                    <td>${log.log_timestamp_formatted}</td>
+                </tr>`;
+            });
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        // Admin Functions
+        let currentAdminSection = null;
+        function openAdminModal(section) {
+            if (currentUser.role !== 'cashier') return;
+            currentAdminSection = section;
+            document.getElementById('adminModalTitle').textContent = getAdminSectionTitle(section);
+            const adminContentArea = document.getElementById('adminContentArea');
+            adminContentArea.innerHTML = ''; // Clear previous content
+
+            switch(section) {
+                case 'products':
+                    ws.send(JSON.stringify({ type: 'get_products' })); // Ensure products are up-to-date
+                    renderAdminProducts();
+                    break;
+                case 'tables':
+                    renderAdminTables();
+                    break;
+                case 'waiters':
+                    ws.send(JSON.stringify({ type: 'get_waiters_list' }));
+                    // renderAdminWaiters will be called on 'waiters_list' message
+                    break;
+                case 'users':
+                    ws.send(JSON.stringify({ type: 'get_users'}));
+                    // renderAdminUsersList will be called on 'users_list' message
+                    break;
+            }
+            document.getElementById('adminModal').style.display = 'block';
+        }
+
+        function getAdminSectionTitle(section) {
+            if (section === 'products') return 'Ürün Yönetimi';
+            if (section === 'tables') return 'Masa Yönetimi';
+            if (section === 'waiters') return 'Garson Yönetimi';
+            if (section === 'users') return 'Kullanıcı Listesi';
+            return 'Yönetim';
+        }
+
+        function renderAdminProducts() {
+            const area = document.getElementById('adminContentArea');
+            area.innerHTML = `
+                <div class="admin-section">
+                    <h3>Yeni Ürün Ekle</h3>
+                    <input type="text" id="newProductName" placeholder="Ürün Adı">
+                    <input type="number" id="newProductPrice" placeholder="Fiyat (örn: 25.50)" step="0.01">
+                    <input type="text" id="newProductCategory" placeholder="Kategori">
+                    <button onclick="addProduct()">Ekle</button>
+                </div>
+                <div class="admin-section">
+                    <h3>Mevcut Ürünler</h3>
+                    <input type="text" id="adminProductSearch" placeholder="Ürünlerde ara..." onkeyup="renderAdminProductsList(this.value)">
+                    <ul id="adminProductList"></ul>
+                </div>
+                <div id="editProductForm" class="admin-section hidden">
+                    <h3>Ürünü Düzenle</h3>
+                    <input type="hidden" id="editProductId">
+                    <input type="text" id="editProductName" placeholder="Ürün Adı">
+                    <input type="number" id="editProductPrice" placeholder="Fiyat" step="0.01">
+                    <input type="text" id="editProductCategory" placeholder="Kategori">
+                    <button onclick="updateProduct()">Güncelle</button>
+                    <button onclick="hideEditProductForm()">İptal</button>
+                </div>
+            `;
+            renderAdminProductsList();
+        }
+
+        function renderAdminProductsList(searchTerm = '') {
+            const listElement = document.getElementById('adminProductList');
+            listElement.innerHTML = '';
+            const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase()));
+            
+            const categories = {};
+            filteredProducts.forEach(p => {
+                if (!categories[p.category]) categories[p.category] = [];
+                categories[p.category].push(p);
+            });
+
+            for (const categoryName in categories) {
+                const categoryHeader = document.createElement('h4');
+                categoryHeader.textContent = categoryName;
+                listElement.appendChild(categoryHeader);
+                categories[categoryName].sort((a,b)=> a.name.localeCompare(b.name)).forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product.name} - ${product.price.toFixed(2)} TL (${product.category})`;
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Düzenle';
+                    editButton.style.marginLeft = '10px';
+                    editButton.onclick = () => showEditProductForm(product);
+                    li.appendChild(editButton);
+                    // Delete button can be added if needed, but not in server.js currently
+                    listElement.appendChild(li);
+                });
+            }
+             if(listElement.innerHTML === '') listElement.innerHTML = "<li>Aramayla eşleşen ürün bulunamadı veya hiç ürün yok.</li>";
+        }
+
+
+        function addProduct() {
+            const name = document.getElementById('newProductName').value;
+            const price = parseFloat(document.getElementById('newProductPrice').value);
+            const category = document.getElementById('newProductCategory').value;
+            if (name && price >= 0 && category) {
+                ws.send(JSON.stringify({ type: 'add_product_to_main_menu', payload: { name, price, category } }));
+                document.getElementById('newProductName').value = '';
+                document.getElementById('newProductPrice').value = '';
+                document.getElementById('newProductCategory').value = '';
+            } else {
+                showToast('Yeni ürün için tüm alanları doldurun.', 3000);
+            }
+        }
+
+        function showEditProductForm(product) {
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductPrice').value = product.price.toFixed(2);
+            document.getElementById('editProductCategory').value = product.category;
+            document.getElementById('editProductForm').classList.remove('hidden');
+        }
+
+        function hideEditProductForm() {
+            document.getElementById('editProductForm').classList.add('hidden');
+        }
+
+        function updateProduct() {
+            const id = document.getElementById('editProductId').value;
+            const name = document.getElementById('editProductName').value;
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const category = document.getElementById('editProductCategory').value;
+            if (id && name && price >= 0 && category) {
+                ws.send(JSON.stringify({ type: 'update_main_menu_product', payload: { id, name, price, category } }));
+                hideEditProductForm();
+            } else {
+                showToast('Ürün güncellemek için tüm alanları doldurun.', 3000);
+            }
+        }
+
+        function renderAdminTables() {
+            const area = document.getElementById('adminContentArea');
+            area.innerHTML = `
+                <div class="admin-section">
+                    <h3>Yeni Masa Ekle</h3>
+                    <input type="text" id="newTableName" placeholder="Masa Adı (örn: Bahçe 17)">
+                    <input type="text" id="newTableType" placeholder="Masa Tipi (örn: bahce, kamelya, özel)">
+                    <button onclick="addTable()">Ekle</button>
+                </div>
+                <div class="admin-section">
+                    <h3>Mevcut Masalar</h3>
+                    <ul id="adminTableList"></ul>
+                </div>
+            `;
+            const listElement = document.getElementById('adminTableList');
+            listElement.innerHTML = '';
+            tables.slice().sort((a,b) => a.name.localeCompare(b.name)).forEach(table => {
+                const li = document.createElement('li');
+                li.textContent = `${table.name} (Tip: ${table.type || 'belirtilmemiş'}) - ID: ${table.id}`;
+
+                const editNameButton = document.createElement('button');
+                editNameButton.textContent = 'Adı Düzenle';
+                editNameButton.style.marginLeft = '10px';
+                editNameButton.onclick = () => editTableNamePrompt(table.id, table.name);
+                li.appendChild(editNameButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Sil';
+                deleteButton.style.marginLeft = '5px';
+                deleteButton.onclick = () => deleteTable(table.id, table.name);
+                li.appendChild(deleteButton);
+
+                listElement.appendChild(li);
+            });
+        }
+
+        function addTable() {
+            const name = document.getElementById('newTableName').value;
+            const type = document.getElementById('newTableType').value;
+            if (name.trim()) {
+                ws.send(JSON.stringify({ type: 'add_table', payload: { name, type } }));
+                document.getElementById('newTableName').value = '';
+                document.getElementById('newTableType').value = '';
+            } else {
+                showToast('Masa adı boş olamaz.', 3000);
+            }
+        }
+
+        function editTableNamePrompt(tableId, oldName) {
+            const newName = prompt(`"${oldName}" masası için yeni adı girin:`, oldName);
+            if (newName && newName.trim() && newName.trim() !== oldName) {
+                ws.send(JSON.stringify({ type: 'edit_table_name', payload: { tableId, newName: newName.trim() } }));
+            } else if (newName !== null) { // User didn't cancel, but input was invalid
+                showToast('Geçerli bir yeni masa adı girin.', 3000);
+            }
+        }
+
+        function deleteTable(tableId, tableName) {
+            if (confirm(`"${tableName}" masasını silmek istediğinizden emin misiniz? Masa doluysa silinemez.`)) {
+                ws.send(JSON.stringify({ type: 'delete_table', payload: { tableId } }));
+            }
+        }
+
+        function renderAdminWaiters() {
+            const area = document.getElementById('adminContentArea');
+            area.innerHTML = `
+                <div class="admin-section">
+                    <h3>Yeni Garson Ekle</h3>
+                    <input type="text" id="newWaiterUsername" placeholder="Kullanıcı Adı">
+                    <input type="password" id="newWaiterPassword" placeholder="Şifre">
+                    <button onclick="addWaiter()">Ekle</button>
+                </div>
+                <div class="admin-section">
+                    <h3>Mevcut Garsonlar</h3>
+                    <ul id="adminWaiterList"></ul>
+                </div>
+            `;
+            const listElement = document.getElementById('adminWaiterList');
+            listElement.innerHTML = '';
+             if(waiters.length === 0) {
+                listElement.innerHTML = '<li>Kayıtlı garson bulunmamaktadır.</li>';
+                return;
+            }
+            waiters.sort((a,b)=>a.username.localeCompare(b.username)).forEach(waiter => {
+                const li = document.createElement('li');
+                li.textContent = `${waiter.username} (ID: ${waiter.id})`;
+
+                const editPassButton = document.createElement('button');
+                editPassButton.textContent = 'Şifre Değiştir';
+                editPassButton.style.marginLeft = '10px';
+                editPassButton.onclick = () => editWaiterPasswordPrompt(waiter.id, waiter.username);
+                li.appendChild(editPassButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Sil';
+                deleteButton.style.marginLeft = '5px';
+                deleteButton.onclick = () => deleteWaiter(waiter.id, waiter.username);
+                li.appendChild(deleteButton);
+
+                listElement.appendChild(li);
+            });
+        }
+
+        function addWaiter() {
+            const username = document.getElementById('newWaiterUsername').value;
+            const password = document.getElementById('newWaiterPassword').value;
+            if (username && password) {
+                ws.send(JSON.stringify({ type: 'add_waiter', payload: { username, password } }));
+                document.getElementById('newWaiterUsername').value = '';
+                document.getElementById('newWaiterPassword').value = '';
+            } else {
+                showToast('Garson için kullanıcı adı ve şifre girin.', 3000);
+            }
+        }
+
+        function editWaiterPasswordPrompt(userId, username) {
+            const newPassword = prompt(`Garson "${username}" için yeni şifreyi girin:`);
+            if (newPassword) { // Empty password might be intentional by admin, server should validate
+                ws.send(JSON.stringify({ type: 'edit_waiter_password', payload: { userId, newPassword } }));
+            } else if (newPassword === '') {
+                 showToast('Şifre boş olamaz.', 3000);
+            }
+        }
+
+        function deleteWaiter(userId, username) {
+            if (confirm(`Garson "${username}" kullanıcısını silmek istediğinizden emin misiniz?`)) {
+                ws.send(JSON.stringify({ type: 'delete_waiter', payload: { userId } }));
+            }
+        }
+        
+        function renderAdminUsersList() {
+            const area = document.getElementById('adminContentArea');
+            area.innerHTML = `
+                <div class="admin-section">
+                    <h3>Tüm Kullanıcılar</h3>
+                    <ul id="adminUserFullList"></ul>
+                </div>
+            `;
+            const listElement = document.getElementById('adminUserFullList');
+            listElement.innerHTML = '';
+            if(users.length === 0) {
+                listElement.innerHTML = '<li>Kayıtlı kullanıcı bulunmamaktadır.</li>';
+                return;
+            }
+            users.sort((a,b)=>a.username.localeCompare(b.username)).forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `${user.username} (ID: ${user.id}, Rol: ${user.role})`;
+                listElement.appendChild(li);
+            });
+        }
+
+
+        // KDS Functions
+        function renderKdsOrders(kdsOrders) {
+            const kdsArea = document.getElementById('kdsOrdersArea');
+            kdsArea.innerHTML = ''; // Clear before rendering all
+            // Filter out orders where all items are delivered or the order is empty
+            const activeKdsOrders = kdsOrders.filter(order => 
+                order.order && order.order.length > 0 &&
+                order.order.some(item => item.kds_status_mutfak !== 'delivered_to_customer')
+            );
+
+            activeKdsOrders.sort((a, b) => (a.last_order_timestamp || 0) - (b.last_order_timestamp || 0));
+            activeKdsOrders.forEach(order => appendOrUpdateKdsOrderCard(order));
+        }
+
+        function appendOrUpdateKdsOrderCard(order) {
+            const kdsArea = document.getElementById('kdsOrdersArea');
+            let orderCard = document.getElementById(`kds-order-${order.id}`);
+
+            // If all items are delivered, and it's a quick sale, ensure it's removed or handled
+            if (order.isQuickSale && order.order.every(item => item.kds_status_mutfak === 'delivered_to_customer')) {
+                if (orderCard) orderCard.remove(); // Kitchen might have already cleared it
+                delete activeQuickSalesForKDSDisplay[order.id];
+                return; // Don't render it
+            }
+             // For regular tables, if all items are delivered, KDS might still show it as "acknowledged" or similar
+            // based on table.kitchen_status, but items themselves would be styled as delivered.
+
+            if (!orderCard) {
+                orderCard = document.createElement('div');
+                orderCard.className = 'order-card';
+                orderCard.id = `kds-order-${order.id}`;
+                kdsArea.appendChild(orderCard);
+            } else {
+                // Clear previous content before re-rendering items and actions
+                orderCard.innerHTML = '';
+            }
+            
+            orderCard.classList.remove('order-card-kitchen-status-new_order', 'order-card-kitchen-status-preparing', 'order-card-kitchen-status-ready', 'order-card-kitchen-status-acknowledged');
+            if(order.kitchen_status) {
+                 orderCard.classList.add(`order-card-kitchen-status-${order.kitchen_status}`);
+            }
+
+
+            let customerInfo = order.customerNameOnTable ? ` (${order.customerNameOnTable})` : (order.isQuickSale && order.name.startsWith("Hızlı Satış - ") ? ` (${order.name.substring("Hızlı Satış - ".length)})` : "");
+            let displayName = order.isQuickSale ? (order.name || "Hızlı Satış") : order.name;
+
+            orderCard.innerHTML += `<h4>${displayName}${customerInfo} <small>[${order.waiterUsername || 'Kasiyer'}]</small></h4>`;
+            const itemsList = document.createElement('div');
+            itemsList.className = 'order-items-container';
+
+            order.order.filter(item => item.kds_status_mutfak !== 'delivered_to_customer').forEach(item => { // Only show non-delivered items actively
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `order-item kds-${item.kds_status_mutfak || 'new'}`;
+                itemDiv.innerHTML = `
+                    <div class="item-details">
+                        <strong>${item.quantity}x ${item.name}</strong>
+                        ${item.description ? `<br><small><i>${item.description}</i></small>` : ''}
+                    </div>
+                    <div class="kds-item-actions">
+                        ${item.kds_status_mutfak === 'new' ? `<button onclick="updateKdsItemStatus('${order.id}', '${item.kds_item_id}', 'preparing')">Hazırlamaya Başla</button>` : ''}
+                        ${item.kds_status_mutfak === 'preparing' ? `<button onclick="updateKdsItemStatus('${order.id}', '${item.kds_item_id}', 'ready')">Hazır</button>` : ''}
+                        ${item.kds_status_mutfak === 'ready' ? `<button disabled>Hazırlandı</button>`: ''}
+                    </div>
+                `;
+                itemsList.appendChild(itemDiv);
+            });
+             if (itemsList.children.length === 0 && order.order.length > 0) { // All items delivered but order card still exists
+                itemsList.innerHTML = "<p>Tüm ürünler hazırlandı/teslim edildi.</p>";
+            }
+
+            orderCard.appendChild(itemsList);
+
+            const orderActionsDiv = document.createElement('div');
+            orderActionsDiv.className = 'kds-order-actions';
+             if (order.order.some(i => i.kds_status_mutfak === 'new')) {
+                 orderActionsDiv.innerHTML += `<button onclick="updateKdsTableStatus('${order.id}', 'preparing')">Tümünü Hazırlamaya Başla</button> `;
+             }
+            if (order.order.some(i => i.kds_status_mutfak === 'new' || i.kds_status_mutfak === 'preparing')) {
+                 orderActionsDiv.innerHTML += `<button onclick="updateKdsTableStatus('${order.id}', 'ready')">Tümünü Hazırla</button>`;
+            }
+            if (order.isQuickSale && order.order.every(item => item.kds_status_mutfak === 'ready' || item.kds_status_mutfak === 'delivered_to_customer')) {
+                 orderActionsDiv.innerHTML += `<button onclick="clearQuickSaleFromKds('${order.id}')" style="background-color: #dc3545; margin-top: 5px;">Temizle (Teslim Edildi)</button>`;
+            }
+            orderCard.appendChild(orderActionsDiv);
+        }
+
+
+        function updateKdsItemStatus(tableId, kdsItemId, newStatus) {
+            ws.send(JSON.stringify({ type: 'kds_item_status_change', payload: { tableId, kds_item_id: kdsItemId, newStatus } }));
+        }
+
+        function updateKdsTableStatus(tableId, newStatusForAllItems) {
+             ws.send(JSON.stringify({ type: 'kds_table_status_change', payload: { tableId, newStatusForAllItems } }));
+        }
+
+        function clearQuickSaleFromKds(quickSaleKdsId){
+             ws.send(JSON.stringify({ type: 'kds_clear_quick_sale', payload: { quickSaleKdsId } }));
+        }
+
+
+        // Initial connection
+        connectWebSocket();
+
+        // Close modal on escape key
+        window.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeModal('orderModal');
+                closeModal('quickSaleModal');
+                closeModal('reportsModal');
+                closeModal('adminModal');
+            }
+        });
+
+    </script>
+</body>
+</html>
