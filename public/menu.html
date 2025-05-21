@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balıklı Lezzet Günleri - Menü</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        header {
+            background-color: #007bff; /* Mavi bir tema */
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+        .category {
+            margin-bottom: 40px;
+        }
+        .category-title {
+            font-size: 2em;
+            color: #0056b3; /* Koyu mavi */
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Daha büyük kartlar için */
+            gap: 25px;
+        }
+        .product-card {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+        .product-card img {
+            width: 100%;
+            max-height: 200px; /* Resim yüksekliğini sınırlayalım */
+            object-fit: cover; /* Resmin orantısını koruyarak sığdır */
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #eee;
+        }
+        .product-card h3 {
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .product-card .price {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #007bff;
+            margin-top: auto; /* Fiyatı kartın altına iter */
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Balıklı Lezzet Günleri Menüsü</h1>
+    </header>
+
+    <div class="container">
+        <div id="menu-container"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024-2025 Balıklı Lezzet Günleri. Tüm hakları saklıdır.</p>
+    </footer>
+
+    <script>
+        const products = [
+            { name: "İSKENDER - 120 GR", price: 275.00, category: "ET - TAVUK", image: "iskender.jpg" },
+            { name: "ET DÖNER EKMEK ARASI", price: 150.00, category: "ET - TAVUK", image: "et-doner-ekmek-arasi.jpg" },
+            { name: "ET DÖNER PORSİYON", price: 175.00, category: "ET - TAVUK", image: "et-doner-porsiyon.jpg" },
+            { name: "TAVUK DÖNER EKMEK ARASI", price: 130.00, category: "ET - TAVUK", image: "tavuk-doner-ekmek-arasi.jpg" },
+            { name: "TAVUK DÖNER PORSİYON", price: 150.00, category: "ET - TAVUK", image: "tavuk-doner-porsiyon.jpg" },
+            { name: "KÖFTE EKMEK", price: 130.00, category: "ET - TAVUK", image: "kofte-ekmek.jpg" },
+            { name: "KÖFTE PORSİYON", price: 150.00, category: "ET - TAVUK", image: "kofte-porsiyon.jpg" },
+            { name: "KUZU ŞİŞ", price: 150.00, category: "ET - TAVUK", image: "kuzu-sis.jpg" },
+            { name: "ADANA ŞİŞ", price: 150.00, category: "ET - TAVUK", image: "adana-sis.jpg" },
+            { name: "PİRZOLA - 4 ADET", price: 250.00, category: "ET - TAVUK", image: "pirzola.jpg" },
+            { name: "TAVUK FAJİTA", price: 200.00, category: "ET - TAVUK", image: "tavuk-fajita.jpg" },
+            { name: "TAVUK (PİLİÇ) ÇEVİRME", price: 250.00, category: "ET - TAVUK", image: "tavuk-cevirme.jpg" },
+            { name: "ET DÖNER - KG", price: 1300.00, category: "ET - TAVUK", image: "et-doner-kg.jpg" },
+            { name: "ET DÖNER - 500 GR", price: 650.00, category: "ET - TAVUK", image: "et-doner-500gr.jpg" },
+            { name: "TAVUK DÖNER - KG", price: 800.00, category: "ET - TAVUK", image: "tavuk-doner-kg.jpg" },
+            { name: "TAVUK DÖNER - 500 GR", price: 400.00, category: "ET - TAVUK", image: "tavuk-doner-500gr.jpg" },
+            { name: "AYVALIK TOSTU", price: 120.00, category: "ATIŞTIRMALIK", image: "ayvalik-tostu.jpg" },
+            { name: "HAMBURGER", price: 150.00, category: "ATIŞTIRMALIK", image: "hamburger.jpg" },
+            { name: "BALIK BURGER", price: 150.00, category: "ATIŞTIRMALIK", image: "balik-burger.jpg" },
+            { name: "PİDE ÇEŞİTLERİ", price: 120.00, category: "ATIŞTIRMALIK", image: "pide-cesitleri.jpg" },
+            { name: "PİZZA KARIŞIK (ORTA BOY)", price: 150.00, category: "ATIŞTIRMALIK", image: "pizza-orta.jpg" },
+            { name: "PİZZA KARIŞIK (BÜYÜK BOY)", price: 200.00, category: "ATIŞTIRMALIK", image: "pizza-buyuk.jpg" },
+            { name: "LAHMACUN", price: 75.00, category: "ATIŞTIRMALIK", image: "lahmacun.jpg" },
+            { name: "ÇİĞ KÖFTE - KG (MARUL-LİMON)", price: 300.00, category: "ATIŞTIRMALIK", image: "cig-kofte.jpg" },
+            { name: "YAĞLI GÖZLEME", price: 50.00, category: "ATIŞTIRMALIK", image: "yagli-gozleme.jpg" },
+            { name: "İÇLİ GÖZLEME", price: 60.00, category: "ATIŞTIRMALIK", image: "icli-gozleme.jpg" },
+            { name: "OSMANLI ŞERBETİ - 1 LT", price: 75.00, category: "İÇECEK", image: "osmanli-serbeti.jpg" },
+            { name: "LİMONATA - 1 LT", price: 75.00, category: "İÇECEK", image: "limonata.jpg" },
+            { name: "AYRAN", price: 10.00, category: "İÇECEK", image: "ayran.jpg" },
+            { name: "SU", price: 10.00, category: "İÇECEK", image: "su.jpg" },
+            { name: "ÇAY", price: 10.00, category: "İÇECEK", image: "cay.jpg" },
+            { name: "SOĞUK ÇAY ÇEŞİTLERİ", price: 25.00, category: "İÇECEK", image: "soguk-cay.jpg" },
+            { name: "TAMEK MEYVE SUYU", price: 25.00, category: "İÇECEK", image: "meyve-suyu.jpg" },
+            { name: "MEYVELİ MADEN SUYU", price: 25.00, category: "İÇECEK", image: "meyveli-maden-suyu.jpg" },
+            { name: "NİĞDE GAZOZU", price: 25.00, category: "İÇECEK", image: "nigde-gazozu.jpg" },
+            { name: "ŞALGAM", price: 25.00, category: "İÇECEK", image: "salgam.jpg" },
+            { name: "SADE MADEN SUYU", price: 15.00, category: "İÇECEK", image: "sade-maden-suyu.jpg" },
+            { name: "TROPİKAL - ÇİLEK KOKUSU", price: 75.00, category: "İÇECEK", image: "tropikal-cilek.jpg" },
+            { name: "TROPİKAL - KAVUNEZYA", price: 75.00, category: "İÇECEK", image: "tropikal-kavun.jpg" },
+            { name: "TROPİKAL - NAR-I ŞAHANE", price: 75.00, category: "İÇECEK", image: "tropikal-nar.jpg" },
+            { name: "EV BAKLAVASI - KG", price: 400.00, category: "TATLI", image: "baklava-kg.jpg" },
+            { name: "EV BAKLAVASI - 500 GR", price: 200.00, category: "TATLI", image: "baklava-500gr.jpg" },
+            { name: "EV BAKLAVASI - PORSİYON", price: 75.00, category: "TATLI", image: "baklava-porsiyon.jpg" },
+            { name: "AŞURE - 500 GRAM", price: 100.00, category: "TATLI", image: "asure.jpg" },
+            { name: "HÖŞMERİM - 500 GR", price: 100.00, category: "TATLI", image: "hosmerim.jpg" },
+            { name: "WAFFLE", price: 150.00, category: "TATLI", image: "waffle.jpg" },
+            { name: "DİĞER PASTA ÇEŞİTLERİ", price: 50.00, category: "TATLI", image: "pasta-cesitleri.jpg" },
+            { name: "KELLE PAÇA ÇORBA", price: 60.00, category: "ÇORBA", image: "kelle-paca-corba.jpg" },
+            { name: "TARHANA ÇORBA", price: 50.00, category: "ÇORBA", image: "tarhana-corba.jpg" }
+        ];
+
+        function slugify(text) {
+            var trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', ' ': '-', '.': '', ',': '' };
+            return text.toLowerCase().replace(/[çğıöşü .]/g, function(match) { return trMap[match] || match; }).replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuContainer = document.getElementById('menu-container');
+            const categories = {};
+
+            products.forEach(product => {
+                if (!categories[product.category]) {
+                    categories[product.category] = [];
+                }
+                // Resim adını slugify fonksiyonu ile oluştur, eğer product objesinde yoksa
+                let imageName = product.image || `${slugify(product.name)}.jpg`;
+                categories[product.category].push({...product, image: imageName});
+            });
+
+            const categoryOrder = ["ÇORBA", "ET - TAVUK", "ATIŞTIRMALIK", "İÇECEK", "TATLI"];
+
+            for (const categoryName of categoryOrder) {
+                if (categories[categoryName]) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.classList.add('category');
+
+                    const title = document.createElement('h2');
+                    title.classList.add('category-title');
+                    title.textContent = categoryName;
+                    categoryDiv.appendChild(title);
+
+                    const productGrid = document.createElement('div');
+                    productGrid.classList.add('product-grid');
+
+                    categories[categoryName].forEach(product => {
+                        const productCard = document.createElement('div');
+                        productCard.classList.add('product-card');
+
+                        const img = document.createElement('img');
+                        img.src = `images/${product.image}`; // images/ klasörü altında olduğunu varsayıyoruz
+                        img.alt = product.name;
+                        // Resim yüklenemezse varsayılan bir resim veya stil eklenebilir
+                        img.onerror = function() { this.src = 'images/placeholder.jpg'; this.alt = 'Resim bulunamadı'; };
+
+
+                        const name = document.createElement('h3');
+                        name.textContent = product.name;
+
+                        const price = document.createElement('p');
+                        price.classList.add('price');
+                        price.textContent = `${product.price.toFixed(2)} TL`;
+
+                        productCard.appendChild(img);
+                        productCard.appendChild(name);
+                        productCard.appendChild(price);
+                        productGrid.appendChild(productCard);
+                    });
+
+                    categoryDiv.appendChild(productGrid);
+                    menuContainer.appendChild(categoryDiv);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
